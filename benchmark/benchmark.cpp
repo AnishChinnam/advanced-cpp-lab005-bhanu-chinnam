@@ -131,6 +131,37 @@ void benchmark_common(std::size_t max_input_size, int trials, std::size_t naive_
     }
 }
 
+// The common-element inputs above draw from only 19 distinct values, so the
+// naive scan finds a match within the first few elements and never reaches its
+// O(n x m) worst case. This second scenario uses two half-overlapping ranges:
+// half of the values in the left array are absent from the right array, so the
+// naive version scans the entire right array for each of them.
+void benchmark_common_disjoint(std::size_t max_input_size, int trials, std::size_t naive_max_input_size) {
+    for (std::size_t n : {1000UL, 10000UL, 100000UL, 1000000UL}) {
+        if (n > max_input_size) {
+            continue;
+        }
+
+        auto left = algorithm_lab::makeCommonInput(n, 0);
+        auto right = algorithm_lab::makeCommonInput(n, static_cast<int>(n / 2));
+        for (int trial = 1; trial <= trials; ++trial) {
+            if (n <= naive_max_input_size) {
+                auto naive_ns = measure_ns([&]() {
+                    volatile int result = algorithm_lab::countCommonDistinctNaive(left, right);
+                    (void)result;
+                });
+                emit_csv_row("common_disjoint", "naive", n, trial, naive_ns);
+            }
+
+            auto efficient_ns = measure_ns([&]() {
+                volatile int result = algorithm_lab::countCommonDistinctEfficient(left, right);
+                (void)result;
+            });
+            emit_csv_row("common_disjoint", "efficient", n, trial, efficient_ns);
+        }
+    }
+}
+
 }  // namespace
 
 // Usage: benchmark_app [max_input_size] [trials] [naive_max_input_size]
@@ -159,5 +190,6 @@ int main(int argc, char** argv) {
     benchmark_duplicate(max_input_size, trials, naive_max_input_size);
     benchmark_frequency(max_input_size, trials, naive_max_input_size);
     benchmark_common(max_input_size, trials, naive_max_input_size);
+    benchmark_common_disjoint(max_input_size, trials, naive_max_input_size);
     return 0;
 }
