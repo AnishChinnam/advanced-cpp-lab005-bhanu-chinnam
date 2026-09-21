@@ -178,3 +178,16 @@ make benchmark
 ```
 
 The goal is to understand performance, not to create complex problem statements. The assignment is intentionally simple so that students focus on observing the practical effects of algorithmic complexity.
+
+## Submission notes
+
+The benchmark program takes an optional third argument that caps the input size for the naive algorithms only:
+
+```bash
+./build/benchmark_app <max_input_size> <trials> <naive_max_input_size>
+./build/benchmark_app 1000000 3 100000 > docs/benchmark_results.csv
+```
+
+The naive algorithms are quadratic, and a single naive trial at n = 1,000,000 takes 45 to 85 minutes on the machine used for this lab. The naive measurements therefore stop at n = 100,000, while the efficient measurements run the full range to n = 1,000,000. The measured results and the analysis are in `docs/complexity.md`, and the raw CSV is in `docs/benchmark_results.csv`.
+
+`make` also builds `build/main`, a small driver in `app/main.cpp` that runs both implementations of all three problems and reports whether they agree.
