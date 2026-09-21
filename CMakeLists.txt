@@ -15,6 +15,9 @@ add_library(algorithms
 
 target_include_directories(algorithms PUBLIC include)
 
+add_executable(main app/main.cpp)
+target_link_libraries(main PRIVATE algorithms)
+
 add_executable(benchmark_app benchmark/benchmark.cpp)
 target_link_libraries(benchmark_app PRIVATE algorithms)
 
