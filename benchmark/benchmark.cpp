@@ -55,7 +55,7 @@ void emit_csv_row(const std::string& problem, const std::string& algorithm,
     std::cout << problem << ',' << algorithm << ',' << input_size << ',' << trial << ',' << nanoseconds << '\n';
 }
 
-void benchmark_duplicate(std::size_t max_input_size, int trials) {
+void benchmark_duplicate(std::size_t max_input_size, int trials, std::size_t naive_max_input_size) {
     for (std::size_t n : {1000UL, 10000UL, 100000UL, 1000000UL}) {
         if (n > max_input_size) {
             continue;
@@ -63,11 +63,13 @@ void benchmark_duplicate(std::size_t max_input_size, int trials) {
 
         auto data = buildDuplicateBenchmarkInput(n);
         for (int trial = 1; trial <= trials; ++trial) {
-            auto naive_ns = measure_ns([&]() {
-                volatile bool result = algorithm_lab::hasDuplicateNaive(data);
-                (void)result;
-            });
-            emit_csv_row("duplicate", "naive", n, trial, naive_ns);
+            if (n <= naive_max_input_size) {
+                auto naive_ns = measure_ns([&]() {
+                    volatile bool result = algorithm_lab::hasDuplicateNaive(data);
+                    (void)result;
+                });
+                emit_csv_row("duplicate", "naive", n, trial, naive_ns);
+            }
 
             auto efficient_ns = measure_ns([&]() {
                 volatile bool result = algorithm_lab::hasDuplicateEfficient(data);
@@ -78,7 +80,7 @@ void benchmark_duplicate(std::size_t max_input_size, int trials) {
     }
 }
 
-void benchmark_frequency(std::size_t max_input_size, int trials) {
+void benchmark_frequency(std::size_t max_input_size, int trials, std::size_t naive_max_input_size) {
     for (std::size_t n : {1000UL, 10000UL, 100000UL, 1000000UL}) {
         if (n > max_input_size) {
             continue;
@@ -86,11 +88,13 @@ void benchmark_frequency(std::size_t max_input_size, int trials) {
 
         auto data = buildFrequencyBenchmarkInput(n);
         for (int trial = 1; trial <= trials; ++trial) {
-            auto naive_ns = measure_ns([&]() {
-                volatile int result = algorithm_lab::mostFrequentNaive(data);
-                (void)result;
-            });
-            emit_csv_row("frequency", "naive", n, trial, naive_ns);
+            if (n <= naive_max_input_size) {
+                auto naive_ns = measure_ns([&]() {
+                    volatile int result = algorithm_lab::mostFrequentNaive(data);
+                    (void)result;
+                });
+                emit_csv_row("frequency", "naive", n, trial, naive_ns);
+            }
 
             auto efficient_ns = measure_ns([&]() {
                 volatile int result = algorithm_lab::mostFrequentEfficient(data);
@@ -101,7 +105,7 @@ void benchmark_frequency(std::size_t max_input_size, int trials) {
     }
 }
 
-void benchmark_common(std::size_t max_input_size, int trials) {
+void benchmark_common(std::size_t max_input_size, int trials, std::size_t naive_max_input_size) {
     for (std::size_t n : {1000UL, 10000UL, 100000UL, 1000000UL}) {
         if (n > max_input_size) {
             continue;
@@ -110,11 +114,13 @@ void benchmark_common(std::size_t max_input_size, int trials) {
         auto left = buildCommonBenchmarkLeft(n);
         auto right = buildCommonBenchmarkRight(n);
         for (int trial = 1; trial <= trials; ++trial) {
-            auto naive_ns = measure_ns([&]() {
-                volatile int result = algorithm_lab::countCommonDistinctNaive(left, right);
-                (void)result;
-            });
-            emit_csv_row("common", "naive", n, trial, naive_ns);
+            if (n <= naive_max_input_size) {
+                auto naive_ns = measure_ns([&]() {
+                    volatile int result = algorithm_lab::countCommonDistinctNaive(left, right);
+                    (void)result;
+                });
+                emit_csv_row("common", "naive", n, trial, naive_ns);
+            }
 
             auto efficient_ns = measure_ns([&]() {
                 volatile int result = algorithm_lab::countCommonDistinctEfficient(left, right);
@@ -127,6 +133,12 @@ void benchmark_common(std::size_t max_input_size, int trials) {
 
 }  // namespace
 
+// Usage: benchmark_app [max_input_size] [trials] [naive_max_input_size]
+//
+// The third argument exists because the naive algorithms are quadratic. At
+// n = 1,000,000 a single naive trial takes more than an hour on the machine
+// used for this lab, so the naive measurements are capped at a smaller size
+// while the efficient measurements continue to the full size.
 int main(int argc, char** argv) {
     std::size_t max_input_size = 100000UL;
     int trials = 3;
@@ -138,9 +150,14 @@ int main(int argc, char** argv) {
         trials = std::stoi(argv[2]);
     }
 
+    std::size_t naive_max_input_size = max_input_size;
+    if (argc >= 4) {
+        naive_max_input_size = static_cast<std::size_t>(std::stoul(argv[3]));
+    }
+
     std::cout << "problem,algorithm,input_size,trial,time_ns\n";
-    benchmark_duplicate(max_input_size, trials);
-    benchmark_frequency(max_input_size, trials);
-    benchmark_common(max_input_size, trials);
+    benchmark_duplicate(max_input_size, trials, naive_max_input_size);
+    benchmark_frequency(max_input_size, trials, naive_max_input_size);
+    benchmark_common(max_input_size, trials, naive_max_input_size);
     return 0;
 }
